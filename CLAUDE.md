@@ -2,7 +2,7 @@
 
 ## Le projet
 
-**Pirate Can Focus Too** est une application Android de concentration (minuteur façon Pomodoro)
+**Pirate Can Focus Too** est une application Android **et iPhone** de concentration (minuteur façon Pomodoro)
 déguisée en aventure de pirate. Le ton est **fun et drôle** : un capitaine pirate en **pixel art**
 accompagne l'utilisateur, avec une interface entièrement en **police monospace** (esprit terminal / rétro).
 
@@ -13,10 +13,14 @@ accompagne l'utilisateur, avec une interface entièrement en **police monospace*
 
 ## Stack
 
-- Kotlin, Jetpack Compose (Material 3), une seule Activity.
+- Kotlin Multiplatform + Compose Multiplatform (Material 3) : un seul module `app` pour Android, iOS et ordinateur.
+- iOS : `iosApp/` est une coque SwiftUI ; le projet Xcode est généré par XcodeGen (`iosApp/project.yml`).
+- Sauvegarde locale (`data/SaveGame.kt`) : SharedPreferences sur Android, NSUserDefaults sur iPhone.
 - Gradle Kotlin DSL + catalogue de versions (`gradle/libs.versions.toml`).
 - `minSdk 26`, `targetSdk`/`compileSdk 35`, JVM 17.
 - Pas de dépendance réseau ni de backend : tout est local.
+- CI : `.github/workflows/build.yml` (APK + tests + app iPhone simulateur),
+  `release.yml` (APK signé publié en Release, pour des mises à jour sans réinstaller : `docs/MISES-A-JOUR.md`).
 
 ## Environnement du développeur
 
@@ -32,31 +36,31 @@ accompagne l'utilisateur, avec une interface entièrement en **police monospace*
 ## Organisation du code
 
 ```
-app/src/main/java/dev/mathieuburnat/piratefocus/
-├── MainActivity.kt          # point d'entrée, démarre/arrête le gardien selon la phase
-├── guard/
-│   ├── BlacklistStore.kt    # liste noire (défaut : Instagram, TikTok, Reddit)
-│   ├── GuardPermissions.kt  # accès aux données d'utilisation + affichage par-dessus
-│   ├── FocusGuardService.kt # service au premier plan qui surveille l'appli ouverte
-│   └── CaughtActivity.kt    # le capitaine surgit sur une appli interdite
-├── journal/                 # journal secret (7 taps sur le menu) : sport contre boissons
-│   ├── Journal.kt           # compteurs et verdict du capitaine (logique pure, testée)
-│   ├── JournalQuotes.kt     # insultes, réactions par boisson, interventions tous les 5 verres
-│   └── JournalViewModel.kt  # en mémoire seulement : remis à zéro à chaque lancement
-├── focus/
-│   ├── FocusTimer.kt        # logique pure du minuteur (testée unitairement)
-│   ├── FocusViewModel.kt    # état de l'écran, boucle de décompte
-│   └── PirateQuotes.kt      # répliques du capitaine selon la phase
-└── ui/
-    ├── PirateApp.kt         # navigation : menu, focus, paramètres
-    ├── MenuScreen.kt        # menu de démarrage (journal grisé, déverrouillé après 7 taps)
-    ├── JournalScreen.kt     # muscles VS bouteilles, capitaine pompette si ça boit trop
-    ├── SettingsScreen.kt    # autorisations du gardien + liste noire
-    ├── FocusScreen.kt       # écran principal (durées 5/10/30 + ":" pour une durée sur mesure)
-    ├── MinutesWheel.kt      # roue de défilement pour choisir les minutes
-    ├── PixelPirate.kt       # le capitaine + palette et drawSprite() partagés
-    ├── PixelShip.kt         # le navire, centré, qui tangue pendant que les vagues défilent
-    └── theme/Theme.kt       # couleurs "mer de nuit" + typo monospace partout
+app/src/
+├── commonMain/kotlin/dev/mathieuburnat/piratefocus/   # partagé Android + iPhone
+│   ├── data/
+│   │   ├── Platform.kt          # KeyValueStore, Alarms (notifications), ShipClock (heure locale)
+│   │   └── SaveGame.kt          # sauvegarde : minuteur, carnet, boutique, journal du jour
+│   ├── focus/
+│   │   ├── FocusTimer.kt        # logique pure du minuteur, calée sur l'heure de fin (testée)
+│   │   ├── FocusViewModel.kt    # état du navire : minuteur, doublons, carnet, boutique
+│   │   └── PirateQuotes.kt      # répliques du capitaine (phases, notifications, boutique, carnet)
+│   ├── logbook/Logbook.kt       # carnet de bord : stats, séries de jours (logique pure, testée)
+│   ├── shop/Shop.kt             # boutique : perroquet, chapeau, galion (logique pure, testée)
+│   ├── journal/                 # journal secret (7 taps sur le menu) : sport contre boissons, une page par jour
+│   └── ui/
+│       ├── Platform.kt          # expect : écran allumé, bouton retour, section gardien des paramètres
+│       ├── PirateApp.kt         # navigation : menu, focus, carnet, boutique, journal, paramètres
+│       ├── Toaster.kt           # toasts dessinés par l'app (pareil sur Android et iPhone)
+│       ├── MenuScreen.kt, FocusScreen.kt, LogbookScreen.kt, ShopScreen.kt, JournalScreen.kt, SettingsScreen.kt
+│       ├── MinutesWheel.kt      # roue de défilement pour choisir les minutes
+│       ├── PixelPirate.kt       # le capitaine (+ perroquet, chapeau) + palette et drawSprite() partagés
+│       ├── PixelShip.kt         # le navire (ou le galion), centré, qui tangue
+│       └── theme/Theme.kt       # couleurs "mer de nuit" + typo monospace partout
+├── androidMain/                 # MainActivity, guard/ (le gardien), notifications AlarmManager, actual
+├── iosMain/                     # MainViewController (entrée iPhone), NSUserDefaults, notifications iOS, actual
+├── desktopMain/                 # version ordinateur pour tester vite (./gradlew :app:run)
+└── commonTest/                  # tests kotlin.test de toute la logique pure
 ```
 
 ## Conventions
@@ -65,4 +69,7 @@ app/src/main/java/dev/mathieuburnat/piratefocus/
 - Le pixel art est défini sous forme de grilles de caractères dans `PixelPirate.kt`
   (un caractère = une couleur de la palette). Ajouter de nouveaux sprites de la même façon.
 - La logique du minuteur reste dans `FocusTimer.kt`, sans dépendance Android, pour rester testable.
+  L'heure est toujours passée en paramètre (`now`) : jamais d'horloge cachée dans la logique.
+- Le code commun ne doit rien importer d'Android (`android.*`, `java.*`, `String.format`...).
+  Ce qui dépend de la plateforme passe par une interface (`data/Platform.kt`) ou un `expect` (`ui/Platform.kt`).
 - Les nouvelles répliques vont dans `PirateQuotes.kt` : courtes, drôles, en français pirate.

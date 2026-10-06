@@ -4,7 +4,7 @@
 
 **`~ un pirate aussi peut se concentrer ~`**
 
-Une appli Android de concentration où un capitaine pirate en pixel art
+Une appli de concentration pour **Android et iPhone** où un capitaine pirate en pixel art
 surveille ton pont, te raconte des bêtises et jette Instagram par-dessus bord.
 
 <img src="docs/screenshots/menu.png" width="260" alt="Le menu du capitaine" />
@@ -51,13 +51,21 @@ Tout est en **pixel art** et en **police monospace**, comme un vieux terminal de
 - 🔍 **Recherche d'applis** dans la liste noire (sans se soucier des accents)
 - ⌨️ **Répliques façon machine à écrire**, qui changent au hasard (tape sur la bulle pour en avoir une autre)
 - 🌙 **Écran toujours allumé** pendant une traversée
+- 💾 **Tout est sauvegardé** : doublons, traversée en cours (même si le téléphone ferme l'appli), carnet, boutique
+- ⏰ **Minuteur fiable** : calé sur l'horloge, il ne dérive pas et sonne la fin de la traversée même appli fermée
+- 📖 **Carnet de bord** : historique des traversées, série de jours d'affilée, la semaine en barres ASCII
+- 🛒 **Boutique de Barbe-Grise** : un perroquet, un chapeau à plume, un galion à deux mâts
+- 🍏 **iPhone aussi** : même code Kotlin grâce à Compose Multiplatform ([guide](docs/IPHONE.md))
+- 🔄 **Mises à jour sans réinstaller** ([guide](docs/MISES-A-JOUR.md))
 - 📴 **100 % hors ligne** : pas de compte, pas de pub, pas de serveur
 
 ## 🧭 Prochaines escales
 
-- [ ] 📖 **Mon journal** : l'historique de tes traversées
-- [ ] 💾 Sauvegarder les doublons entre deux lancements
-- [ ] 🛒 Dépenser ses doublons (un perroquet ? un chapeau ? un plus gros navire ?)
+- [x] 📖 **Carnet de bord** : l'historique de tes traversées
+- [x] 💾 Sauvegarder les doublons entre deux lancements
+- [x] 🛒 Dépenser ses doublons (un perroquet, un chapeau, un plus gros navire)
+- [x] 🍏 Une version iPhone
+- [ ] ☠️ Un gardien sur iPhone (API Screen Time d'Apple)
 - [ ] 🔕 Activer « Ne pas déranger » pendant le focus
 
 ---
@@ -88,7 +96,10 @@ En ligne de commande :
 ./gradlew assembleDebug        # construit l'APK
 ./gradlew testDebugUnitTest    # lance les tests unitaires
 ./gradlew installDebug         # installe sur l'appareil branché
+./gradlew :app:run             # lance la version ordinateur (pratique pour tester vite)
 ```
+
+Pour l'iPhone (il faut un Mac) : voir [docs/IPHONE.md](docs/IPHONE.md).
 
 ### Tester le gardien sur un émulateur
 
@@ -105,14 +116,16 @@ Ajoute Chrome à la liste noire, lance une traversée, ouvre Chrome : à l'abord
 ### La cale (organisation du code)
 
 ```
-app/src/main/java/dev/mathieuburnat/piratefocus/
-├── MainActivity.kt          # point d'entrée, démarre/arrête le gardien
-├── focus/                   # le minuteur (logique pure, testée) et les répliques
-├── guard/                   # liste noire, autorisations, service gardien, écran d'abordage
-└── ui/                      # écrans Compose, sprites pixel art, thème monospace
+app/src/
+├── commonMain/   # partagé Android + iPhone : minuteur, carnet, boutique, sauvegarde, tous les écrans
+├── androidMain/  # MainActivity, le gardien, notifications Android
+├── iosMain/      # point d'entrée iPhone, notifications iOS
+├── desktopMain/  # version ordinateur (pour tester)
+└── commonTest/   # tests de la logique
+iosApp/           # coque Swift de l'app iPhone (projet Xcode généré par XcodeGen)
 ```
 
-- **Stack** : Kotlin, Jetpack Compose (Material 3), une seule Activity, aucun backend.
+- **Stack** : Kotlin Multiplatform, Compose Multiplatform (Material 3), aucun backend.
 - **Sprites** : définis comme des grilles de caractères dans `PixelPirate.kt` et `PixelShip.kt`
   (un caractère = une couleur de la palette). Dessine ton propre perroquet !
 - **Répliques** : toutes dans `focus/PirateQuotes.kt`. Courtes, drôles, en français pirate.
