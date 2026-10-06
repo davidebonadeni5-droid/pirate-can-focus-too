@@ -31,8 +31,10 @@ fun PirateApp(
     journalViewModel: JournalViewModel = viewModel { JournalViewModel(saveGame) },
 ) {
     var screen by rememberSaveable { mutableStateOf(Screen.MENU) }
-    // Le journal secret se déverrouille à chaque lancement (7 coups sur la porte).
-    var journalUnlocked by rememberSaveable { mutableStateOf(false) }
+    // Journal secret : il se déverrouille à chaque lancement (7 coups sur la porte). Sinon, il est toujours ouvert.
+    var journalKnocked by rememberSaveable { mutableStateOf(false) }
+    val journalState by journalViewModel.uiState.collectAsStateWithLifecycle()
+    val journalUnlocked = !journalState.secret || journalKnocked
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val phase = state.timer.phase
     val guardReady = rememberGuardReady()
@@ -52,7 +54,7 @@ fun PirateApp(
                         onFocus = { screen = Screen.FOCUS },
                         onLogbook = { screen = Screen.LOGBOOK },
                         onShop = { screen = Screen.SHOP },
-                        onUnlockJournal = { journalUnlocked = true },
+                        onUnlockJournal = { journalKnocked = true },
                         onJournal = { screen = Screen.JOURNAL },
                         onSettings = { screen = Screen.SETTINGS },
                     )
@@ -66,7 +68,11 @@ fun PirateApp(
                         onBack = { screen = Screen.MENU },
                     )
                     Screen.JOURNAL -> JournalScreen(journalViewModel, onBack = { screen = Screen.MENU })
-                    Screen.SETTINGS -> SettingsScreen(onBack = { screen = Screen.MENU })
+                    Screen.SETTINGS -> SettingsScreen(
+                        journalSecret = journalState.secret,
+                        onJournalSecret = journalViewModel::setSecret,
+                        onBack = { screen = Screen.MENU },
+                    )
                 }
                 ToastHost(toaster, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
             }

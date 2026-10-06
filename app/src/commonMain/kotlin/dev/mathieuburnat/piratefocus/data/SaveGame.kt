@@ -2,8 +2,9 @@ package dev.mathieuburnat.piratefocus.data
 
 import dev.mathieuburnat.piratefocus.focus.FocusState
 import dev.mathieuburnat.piratefocus.focus.Phase
-import dev.mathieuburnat.piratefocus.journal.Entry
-import dev.mathieuburnat.piratefocus.journal.JournalState
+import dev.mathieuburnat.piratefocus.journal.Categories
+import dev.mathieuburnat.piratefocus.journal.Journal
+import dev.mathieuburnat.piratefocus.journal.JournalPage
 import dev.mathieuburnat.piratefocus.logbook.Logbook
 import dev.mathieuburnat.piratefocus.logbook.Voyage
 import dev.mathieuburnat.piratefocus.shop.Inventory
@@ -49,17 +50,32 @@ class SaveGame(private val store: KeyValueStore) {
         store.putString("shop.equipped", Shop.encode(inventory.equipped))
     }
 
-    /** Le journal secret est celui du jour : une nouvelle page chaque matin. */
-    fun loadJournal(today: Long): JournalState {
-        if (store.getString("journal.day")?.toLongOrNull() != today) return JournalState()
-        val counts = Entry.entries.associateWith { int("journal.${it.name}") ?: 0 }.filterValues { it > 0 }
-        return JournalState(counts)
+    /** Le journal : les lignes perso et une page par jour. */
+    fun loadJournal(): Journal {
+        val custom = Journal.decodeCategories(store.getString("journal.categories"))
+        val stored = store.getString("journal.pages")
+        if (stored != null) return Journal(custom, Journal.decodePages(stored))
+        return Journal(custom, legacyPage())
     }
 
-    fun saveJournal(today: Long, journal: JournalState) {
-        store.putString("journal.day", today.toString())
-        Entry.entries.forEach { store.putString("journal.${it.name}", journal.count(it).toString()) }
+    fun saveJournal(journal: Journal) {
+        store.putString("journal.categories", Journal.encodeCategories(journal.custom))
+        store.putString("journal.pages", Journal.encodePages(journal.pages))
     }
+
+    /** L'ancienne version ne gardait que la page du jour : on la récupère pour ne rien perdre. */
+    private fun legacyPage(): Map<Long, JournalPage> {
+        val day = store.getString("journal.day")?.toLongOrNull() ?: return emptyMap()
+        val page = Categories.builtIn.fold(JournalPage()) { page, category ->
+            page.set(category.id, int("journal.${category.id}") ?: 0)
+        }
+        return if (page.isEmpty) emptyMap() else mapOf(day to page)
+    }
+
+    /** Chacun choisit : journal caché derrière 7 coups sur la porte, ou visible dans le menu. */
+    fun loadJournalSecret(): Boolean = store.getString("journal.secret") != "false"
+
+    fun saveJournalSecret(secret: Boolean) = store.putString("journal.secret", secret.toString())
 
     private fun int(key: String): Int? = store.getString(key)?.toIntOrNull()
 }

@@ -13,8 +13,8 @@ object JournalQuotes {
         else -> null
     }
 
-    const val UNLOCKED = "C'est bon, c'est bon, je te laisse entrer ! Mais attention : c'est encore en travaux. " +
-        "Ne marche pas sur la peinture fraîche."
+    const val UNLOCKED = "C'est bon, c'est bon, je te laisse entrer ! Mais ce qui est écrit dans ce journal " +
+        "reste entre nous et le perroquet."
 
     private val verdicts = mapOf(
         Verdict.PAGE_BLANCHE to listOf(
@@ -53,38 +53,57 @@ object JournalQuotes {
     )
 
     private val reactions = mapOf(
-        Entry.MEGA_SEANCE to listOf(
+        "MEGA_SEANCE" to listOf(
             "Méga séance ! Les tractions, c'est comme hisser les voiles.",
             "Des pompes ! Le pont tremble sous ta puissance.",
             "Hissez ! Ho ! Encore une traction !",
         ),
-        Entry.GRIMPE to listOf(
+        "SALLE" to listOf(
+            "Séance de salle ! Tu soulèves de la fonte comme on hisse une ancre.",
+            "La salle ? Le pont du navire, c'était pas assez grand ?",
+            "Encore une séance de muscu. Les canons vont devenir jaloux.",
+        ),
+        "GRIMPE" to listOf(
             "Tu grimpes comme un mousse dans les haubans !",
             "Grimpe validée. La vigie a une place pour toi.",
             "Attention au vertige, petit singe des mers.",
         ),
-        Entry.ABDOS to listOf(
+        "ABDOS" to listOf(
             "Des abdos en béton, comme une coque toute neuve.",
             "P'tite séance, mais séance quand même. Arr !",
             "Gainage ! Tu tiens mieux que la grand-voile.",
         ),
-        Entry.BIERE to listOf(
+        "BIERE" to listOf(
             "🍺 Une pinte ! Santé, matelot !",
             "🍺 La mousse, c'est pour le pont. Pas pour la moustache.",
             "🍺 Encore une bière ? Les tonneaux commencent à avoir peur.",
             "🍺 Glou glou glou... comme le navire quand il coule.",
         ),
-        Entry.COCKTAIL to listOf(
+        "COCKTAIL" to listOf(
             "🍹 Un cocktail ? Avec une petite ombrelle ? Très pirate, ça.",
             "🍹 Mojito, piña colada... Tu te crois en croisière ?",
             "🍹 Le capitaine tolère l'ombrelle. Pour cette fois.",
             "🍹 Un cocktail, c'est du rhum déguisé. Je valide.",
         ),
-        Entry.VIN to listOf(
+        "VIN" to listOf(
             "🍷 Du vin ! Tu te prends pour un amiral, maintenant ?",
             "🍷 Un petit verre de rouge pour le scorbut, c'est médical.",
             "🍷 Le vin, ça se boit avec le petit doigt levé. Même la main crochet.",
             "🍷 Château Barbe-Noire, grand cru de la cale. Excellent choix.",
+        ),
+    )
+
+    /** Pour les lignes perso, le capitaine improvise. */
+    private val customReactions = mapOf(
+        Side.SPORT to listOf(
+            "« {x} » ? Je ne sais pas ce que c'est, mais ça a l'air de faire transpirer. Bravo !",
+            "{x} ! Un sport de pirate, assurément.",
+            "Va pour {x}. Tout ce qui muscle le moussaillon est bon à prendre.",
+        ),
+        Side.BOISSON to listOf(
+            "« {x} » ? Je n'ai jamais goûté, mais ça sent la cale.",
+            "Un {x} ! Le perroquet en veut une gorgée.",
+            "{x}, hein ? Le capitaine note. Le capitaine juge.",
         ),
     )
 
@@ -101,9 +120,11 @@ object JournalQuotes {
         return pool.filter { it != current }.ifEmpty { pool }.random(random)
     }
 
-    fun reaction(entry: Entry, random: Random = Random.Default): String = reactions.getValue(entry).random(random)
+    fun reaction(category: Category, random: Random = Random.Default): String =
+        reactions[category.id]?.random(random)
+            ?: customReactions.getValue(category.side).random(random).replace("{x}", category.label)
 
-    /** Tous les 5 verres, le capitaine intervient en personne. */
-    fun intervention(drinks: Int, random: Random = Random.Default): String? =
-        if (drinks > 0 && drinks % 5 == 0) interventions.random(random).replace("{n}", "$drinks") else null
+    /** Tous les 5 verres, le capitaine intervient en personne (même si on en note plusieurs d'un coup). */
+    fun intervention(before: Int, drinks: Int, random: Random = Random.Default): String? =
+        if (drinks > before && drinks / 5 > before / 5) interventions.random(random).replace("{n}", "$drinks") else null
 }

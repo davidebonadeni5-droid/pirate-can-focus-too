@@ -49,7 +49,8 @@ app/src/
 │   │   └── PirateQuotes.kt      # répliques du capitaine (phases, notifications, boutique, carnet)
 │   ├── logbook/Logbook.kt       # carnet de bord : stats, séries de jours (logique pure, testée)
 │   ├── shop/Shop.kt             # boutique : perroquet, chapeau, galion (logique pure, testée)
-│   ├── journal/                 # journal secret (7 taps sur le menu) : sport contre boissons, une page par jour
+│   ├── journal/                 # journal sport contre boissons : compteurs, lignes perso, une page par jour,
+│   │                            # secret (7 taps sur le menu) ou visible, au choix dans les paramètres
 │   └── ui/
 │       ├── Platform.kt          # expect : écran allumé, bouton retour, section gardien des paramètres
 │       ├── PirateApp.kt         # navigation : menu, focus, carnet, boutique, journal, paramètres
