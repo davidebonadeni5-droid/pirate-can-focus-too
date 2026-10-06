@@ -1,0 +1,52 @@
+# Projet Xcode de l'app iPhone, généré par XcodeGen (brew install xcodegen, puis `xcodegen` dans ce dossier).
+# Tout le code de l'app est en Kotlin (dossier app/) : ici, il n'y a que la coque Swift qui l'affiche.
+name: PirateFocus
+options:
+  bundleIdPrefix: dev.mathieuburnat
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
+targets:
+  PirateFocus:
+    type: application
+    platform: iOS
+    sources: [iosApp]
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: Pirate Focus
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        # Exigé par Compose Multiplatform pour des animations fluides à 120 Hz.
+        CADisableMinimumFrameDurationOnPhone: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mathieuburnat.piratefocus
+        TARGETED_DEVICE_FAMILY: "1"
+        FRAMEWORK_SEARCH_PATHS: ["$(inherited)", "$(SRCROOT)/../app/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"]
+        OTHER_LDFLAGS: ["$(inherited)", "-framework", "PirateShared"]
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    preBuildScripts:
+      - name: Compiler le Kotlin
+        basedOnDependencyAnalysis: false
+        script: |
+          # Xcode ne voit pas toujours Java : on prend celui d'Android Studio s'il est là.
+          if [ -z "$JAVA_HOME" ] && [ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]; then
+            export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+          fi
+          cd "$SRCROOT/.."
+          ./gradlew :app:embedAndSignAppleFrameworkForXcode
+schemes:
+  PirateFocus:
+    build:
+      targets:
+        PirateFocus: all
+    run:
+      config: Debug
+    archive:
+      config: Release

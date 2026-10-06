@@ -37,3 +37,10 @@ google-services.json
 .idea/
 *.iml
 .kotlin/
+
+# iOS (le projet Xcode est généré par XcodeGen depuis iosApp/project.yml)
+iosApp/*.xcodeproj/
+iosApp/iosApp/Info.plist
+xcuserdata/
+DerivedData/
+.DS_Store

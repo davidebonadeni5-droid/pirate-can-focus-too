@@ -1,0 +1,57 @@
+# Publie un APK signé toujours avec la même clé, et un numéro de version qui augmente :
+# Android installe alors chaque nouvelle version PAR-DESSUS l'ancienne (sans désinstaller, les doublons restent).
+# Avec Obtainium sur le téléphone, les mises à jour arrivent toutes seules. Voir docs/MISES-A-JOUR.md.
+name: Release Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier la clé de signature
+        id: key
+        env:
+          KEYSTORE: ${{ secrets.PIRATE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "::warning::Pas de clé de signature (secret PIRATE_KEYSTORE_BASE64) : pas de version publiée. Voir docs/MISES-A-JOUR.md"
+            exit 0
+          fi
+          echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/pirate.jks"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v4
+        if: steps.key.outputs.ready == 'true'
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.key.outputs.ready == 'true'
+      - name: Construire l'APK signé
+        if: steps.key.outputs.ready == 'true'
+        env:
+          PIRATE_KEYSTORE_PATH: ${{ runner.temp }}/pirate.jks
+          PIRATE_KEYSTORE_PASSWORD: ${{ secrets.PIRATE_KEYSTORE_PASSWORD }}
+          PIRATE_KEY_ALIAS: ${{ secrets.PIRATE_KEY_ALIAS }}
+          PIRATE_KEY_PASSWORD: ${{ secrets.PIRATE_KEY_PASSWORD }}
+        run: |
+          export VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))
+          export VERSION_NAME="0.2.$GITHUB_RUN_NUMBER"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          ./gradlew :app:assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "pirate-focus-$VERSION_NAME.apk"
+      - name: Publier la version sur GitHub
+        if: steps.key.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION_NAME" "pirate-focus-$VERSION_NAME.apk" \
+            --title "Pirate Focus $VERSION_NAME" \
+            --notes "Nouvelle traversée ! $(git log -1 --pretty=%s)"
