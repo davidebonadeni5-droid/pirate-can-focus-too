@@ -2,6 +2,7 @@ package dev.mathieuburnat.piratefocus.data
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -35,6 +36,13 @@ object ShipClock {
 
     /** Numéro du jour local (jours depuis le 1er janvier 1970). */
     fun dayOf(millis: Long): Long = local(millis).date.toEpochDays().toLong()
+
+    /** « 06/10 » pour un numéro de jour local. */
+    fun dayLabel(day: Long): String {
+        val date = LocalDate.fromEpochDays(day.toInt())
+        fun two(n: Int) = n.toString().padStart(2, '0')
+        return "${two(date.dayOfMonth)}/${two(date.monthNumber)}"
+    }
 
     /** « 06/10 14:32 » */
     fun shortDateTime(millis: Long): String {

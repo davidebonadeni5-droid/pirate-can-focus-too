@@ -2,8 +2,9 @@ package dev.mathieuburnat.piratefocus.data
 
 import dev.mathieuburnat.piratefocus.focus.FocusState
 import dev.mathieuburnat.piratefocus.focus.Phase
-import dev.mathieuburnat.piratefocus.journal.Entry
-import dev.mathieuburnat.piratefocus.journal.JournalState
+import dev.mathieuburnat.piratefocus.journal.Categories
+import dev.mathieuburnat.piratefocus.journal.Journal
+import dev.mathieuburnat.piratefocus.journal.Side
 import dev.mathieuburnat.piratefocus.shop.Inventory
 import dev.mathieuburnat.piratefocus.shop.Item
 import kotlin.test.Test
@@ -47,12 +48,33 @@ class SaveGameTest {
     }
 
     @Test
-    fun `le journal tourne la page chaque jour`() {
+    fun `le journal garde toutes ses pages et ses lignes perso`() {
         val store = InMemoryStore()
-        val journal = JournalState().add(Entry.BIERE).add(Entry.GRIMPE)
-        SaveGame(store).saveJournal(today = 100, journal = journal)
+        val journal = Journal().addCategory("Course", Side.SPORT).let {
+            it.set(100, Categories.BIERE.id, 3).set(99, it.custom.first().id, 1)
+        }
+        SaveGame(store).saveJournal(journal)
 
-        assertEquals(journal, SaveGame(store).loadJournal(today = 100))
-        assertEquals(JournalState(), SaveGame(store).loadJournal(today = 101))
+        assertEquals(journal, SaveGame(store).loadJournal())
+    }
+
+    @Test
+    fun `la page du jour de l'ancienne version est récupérée`() {
+        val store = InMemoryStore()
+        store.putString("journal.day", "100")
+        store.putString("journal.BIERE", "2")
+        store.putString("journal.GRIMPE", "1")
+
+        val journal = SaveGame(store).loadJournal()
+        assertEquals(2, journal.count(100, Categories.BIERE.id))
+        assertEquals(1, journal.count(100, Categories.GRIMPE.id))
+    }
+
+    @Test
+    fun `le journal est secret par défaut, au choix de chacun`() {
+        val store = InMemoryStore()
+        assertEquals(true, SaveGame(store).loadJournalSecret())
+        SaveGame(store).saveJournalSecret(false)
+        assertEquals(false, SaveGame(store).loadJournalSecret())
     }
 }
