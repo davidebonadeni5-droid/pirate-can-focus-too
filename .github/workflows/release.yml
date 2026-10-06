@@ -1,7 +1,10 @@
-# Publie un APK signé toujours avec la même clé, et un numéro de version qui augmente :
-# Android installe alors chaque nouvelle version PAR-DESSUS l'ancienne (sans désinstaller, les doublons restent).
-# Avec Obtainium sur le téléphone, les mises à jour arrivent toutes seules. Voir docs/MISES-A-JOUR.md.
-name: Release Android
+# Publie une nouvelle version à chaque push sur main, dans les Releases GitHub :
+# - Android : un APK signé toujours avec la même clé, et un numéro de version qui augmente.
+#   Android l'installe PAR-DESSUS l'ancienne (sans désinstaller, les doublons restent).
+#   Avec Obtainium sur le téléphone, les mises à jour arrivent toutes seules. Voir docs/MISES-A-JOUR.md.
+# - Windows : un installateur .exe, un .msi (pour les mises à jour automatiques au lancement)
+#   et une version portable en .zip.
+name: Release
 
 on:
   push:
@@ -12,7 +15,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  android:
+    name: APK Android signé
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +26,7 @@ jobs:
           KEYSTORE: ${{ secrets.PIRATE_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE" ]; then
-            echo "::warning::Pas de clé de signature (secret PIRATE_KEYSTORE_BASE64) : pas de version publiée. Voir docs/MISES-A-JOUR.md"
+            echo "::warning::Pas de clé de signature (secret PIRATE_KEYSTORE_BASE64) : pas d'APK publié. Voir docs/MISES-A-JOUR.md"
             exit 0
           fi
           echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/pirate.jks"
@@ -44,14 +48,55 @@ jobs:
         run: |
           export VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))
           export VERSION_NAME="0.2.$GITHUB_RUN_NUMBER"
-          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           ./gradlew :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk "pirate-focus-$VERSION_NAME.apk"
-      - name: Publier la version sur GitHub
+          mkdir -p release
+          cp app/build/outputs/apk/release/app-release.apk "release/pirate-focus-$VERSION_NAME.apk"
+      - uses: actions/upload-artifact@v4
         if: steps.key.outputs.ready == 'true'
+        with:
+          name: release-android
+          path: release/
+
+  windows:
+    name: Installateur Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Construire le .exe et la version portable
+        shell: bash
+        run: |
+          export DESKTOP_VERSION="1.0.$GITHUB_RUN_NUMBER"
+          ./gradlew :app:packageExe :app:packageMsi :app:createDistributable
+          mkdir -p release
+          cp app/build/compose/binaries/main/exe/*.exe "release/PirateFocus-$DESKTOP_VERSION-installateur.exe"
+          # Le .msi sert aux mises à jour automatiques : l'appli le télécharge et l'installe au lancement.
+          cp app/build/compose/binaries/main/msi/*.msi "release/PirateFocus-$DESKTOP_VERSION.msi"
+          (cd app/build/compose/binaries/main/app && 7z a -tzip "$GITHUB_WORKSPACE/release/PirateFocus-$DESKTOP_VERSION-portable.zip" PirateFocus)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: release/
+
+  publish:
+    name: Publier la version
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
+      - name: Créer la Release GitHub
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v$VERSION_NAME" "pirate-focus-$VERSION_NAME.apk" \
-            --title "Pirate Focus $VERSION_NAME" \
+          gh release create "v0.2.$GITHUB_RUN_NUMBER" release/* \
+            --title "Pirate Focus 0.2.$GITHUB_RUN_NUMBER" \
             --notes "Nouvelle traversée ! $(git log -1 --pretty=%s)"

@@ -18,9 +18,11 @@ accompagne l'utilisateur, avec une interface entièrement en **police monospace*
 - Sauvegarde locale (`data/SaveGame.kt`) : SharedPreferences sur Android, NSUserDefaults sur iPhone.
 - Gradle Kotlin DSL + catalogue de versions (`gradle/libs.versions.toml`).
 - `minSdk 26`, `targetSdk`/`compileSdk 35`, JVM 17.
-- Pas de dépendance réseau ni de backend : tout est local.
-- CI : `.github/workflows/build.yml` (APK + tests + app iPhone simulateur),
-  `release.yml` (APK signé publié en Release, pour des mises à jour sans réinstaller : `docs/MISES-A-JOUR.md`).
+- Pas de dépendance réseau ni de backend : tout est local. Seule exception : la version Windows
+  (`desktopMain/DesktopUpdater.kt`) lit la dernière Release GitHub au lancement pour se mettre à jour.
+- CI : `.github/workflows/build.yml` (APK + tests + app iPhone simulateur + .exe Windows),
+  `release.yml` (APK signé, .exe, .msi et .zip Windows publiés en Release, pour des mises à jour
+  sans réinstaller : `docs/MISES-A-JOUR.md`).
 
 ## Environnement du développeur
 
@@ -59,7 +61,7 @@ app/src/
 │       └── theme/Theme.kt       # couleurs "mer de nuit" + typo monospace partout
 ├── androidMain/                 # MainActivity, guard/ (le gardien), notifications AlarmManager, actual
 ├── iosMain/                     # MainViewController (entrée iPhone), NSUserDefaults, notifications iOS, actual
-├── desktopMain/                 # version ordinateur pour tester vite (./gradlew :app:run)
+├── desktopMain/                 # version ordinateur / Windows .exe (./gradlew :app:run), DesktopUpdater
 └── commonTest/                  # tests kotlin.test de toute la logique pure
 ```
 
