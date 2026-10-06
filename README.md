@@ -4,7 +4,7 @@
 
 **`~ un pirate aussi peut se concentrer ~`**
 
-Une appli de concentration pour **Android et iPhone** où un capitaine pirate en pixel art
+Une appli de concentration pour **Android, iPhone et Windows** où un capitaine pirate en pixel art
 surveille ton pont, te raconte des bêtises et jette Instagram par-dessus bord.
 
 <img src="docs/screenshots/menu.png" width="260" alt="Le menu du capitaine" />
@@ -56,8 +56,9 @@ Tout est en **pixel art** et en **police monospace**, comme un vieux terminal de
 - 📖 **Carnet de bord** : historique des traversées, série de jours d'affilée, la semaine en barres ASCII
 - 🛒 **Boutique de Barbe-Grise** : un perroquet, un chapeau à plume, un galion à deux mâts
 - 🍏 **iPhone aussi** : même code Kotlin grâce à Compose Multiplatform ([guide](docs/IPHONE.md))
+- 🪟 **Windows aussi** : un installateur `.exe` dans les Releases, qui se met à jour tout seul à chaque lancement
 - 🔄 **Mises à jour sans réinstaller** ([guide](docs/MISES-A-JOUR.md))
-- 📴 **100 % hors ligne** : pas de compte, pas de pub, pas de serveur
+- 📴 **Hors ligne** : pas de compte, pas de pub, pas de serveur (seule la version Windows regarde GitHub pour ses mises à jour)
 
 ## 🧭 Prochaines escales
 
@@ -97,6 +98,7 @@ En ligne de commande :
 ./gradlew testDebugUnitTest    # lance les tests unitaires
 ./gradlew installDebug         # installe sur l'appareil branché
 ./gradlew :app:run             # lance la version ordinateur (pratique pour tester vite)
+./gradlew :app:packageExe      # construit l'installateur Windows (à lancer sous Windows)
 ```
 
 Pour l'iPhone (il faut un Mac) : voir [docs/IPHONE.md](docs/IPHONE.md).
@@ -120,7 +122,7 @@ app/src/
 ├── commonMain/   # partagé Android + iPhone : minuteur, carnet, boutique, sauvegarde, tous les écrans
 ├── androidMain/  # MainActivity, le gardien, notifications Android
 ├── iosMain/      # point d'entrée iPhone, notifications iOS
-├── desktopMain/  # version ordinateur (pour tester)
+├── desktopMain/  # version ordinateur (Windows .exe) et ses mises à jour automatiques
 └── commonTest/   # tests de la logique
 iosApp/           # coque Swift de l'app iPhone (projet Xcode généré par XcodeGen)
 ```

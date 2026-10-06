@@ -56,6 +56,23 @@ Sans ces secrets, le workflow ne publie rien (il laisse juste un avertissement).
 > 💡 Un `./gradlew installDebug` depuis Android Studio utilise encore la clé de debug : il entrera en conflit
 > avec la version installée par Obtainium. Pour développer, utilise plutôt l'émulateur.
 
+## Et sur Windows ?
+
+Chaque push sur `main` publie aussi dans les **Releases** :
+
+- `PirateFocus-1.0.N-installateur.exe` : l'installateur, à lancer **une seule fois** ;
+- `PirateFocus-1.0.N.msi` : utilisé par les mises à jour automatiques ;
+- `PirateFocus-1.0.N-portable.zip` : une version sans installation (pas de mises à jour automatiques).
+
+Une fois installée, l'appli regarde **à chaque lancement** s'il y a une version plus récente sur GitHub.
+Si oui, elle la télécharge, se ferme, l'installe par-dessus (barre de progression, aucune question) et se relance.
+Les doublons restent : ils sont rangés dans le registre Windows, pas dans le dossier de l'appli.
+Sans Internet, rien ne se passe et l'appli démarre normalement.
+
+> ⚠️ L'installateur n'est pas signé (un certificat de signature Windows coûte cher) : au premier lancement,
+> Windows SmartScreen affiche « Windows a protégé votre ordinateur ». Clique sur *Informations complémentaires*
+> puis *Exécuter quand même*.
+
 ## Et sur iPhone ?
 
 - **Depuis Xcode** (compte Apple gratuit) : relancer ▶ installe la nouvelle version **par-dessus**, les données

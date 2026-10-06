@@ -105,9 +105,24 @@ compose.desktop {
     application {
         mainClass = "dev.mathieuburnat.piratefocus.MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb)
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb)
             packageName = "PirateFocus"
-            packageVersion = "1.0.0"
+            // Windows exige MAJEUR.MINEUR.BUILD : la CI fournit un BUILD qui augmente à chaque version.
+            packageVersion = System.getenv("DESKTOP_VERSION") ?: "1.0.0"
+            description = "Un pirate aussi peut se concentrer"
+            vendor = "Pirate Can Focus Too"
+            // Sauvegarde (java.util.prefs) et vérification des mises à jour (java.net.http) :
+            // à embarquer dans le Java fourni avec l'appli.
+            modules("java.prefs", "java.net.http")
+            windows {
+                // Toujours le même identifiant : une nouvelle version remplace l'ancienne, sans désinstaller.
+                upgradeUuid = "6f1c2b7e-3d4a-4c8e-9b2f-5a7d1e0c9f31"
+                menuGroup = "Pirate Focus"
+                shortcut = true
+                menu = true
+                perUserInstall = true
+                dirChooser = true
+            }
         }
     }
 }
